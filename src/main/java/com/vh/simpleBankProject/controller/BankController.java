@@ -1,16 +1,17 @@
 package com.vh.simpleBankProject.controller;
 
+import com.vh.simpleBankProject.dto.BankAccountDataList;
 import com.vh.simpleBankProject.dto.RegisterBankAccount;
 import com.vh.simpleBankProject.service.BankAccountService;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.List;
 
 
 @RestController
@@ -20,15 +21,18 @@ public class BankController {
     @Autowired
     private BankAccountService bankAccountService;
 
-    @GetMapping
-    public ResponseEntity getBankAccountByAccountNumber(Pageable pageable, String accountNumber) {
-
-        return bankAccountService.getBankAccountByAccountNumber(pageable, accountNumber);
+    @GetMapping("{accountNumber}")
+    public ResponseEntity<List<BankAccountDataList>> getBankAccountByAccountNumber(@PathVariable String accountNumber) {
+        if(bankAccountService.isNotValidAccountNumber(accountNumber)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        List<BankAccountDataList> getBankAccount = bankAccountService.getBankAccountByAccountNumber(accountNumber);
+        return ResponseEntity.status(HttpStatus.OK).body(getBankAccount);
 
     }
     @PostMapping
     @Transactional
-    public ResponseEntity createBankAccount(RegisterBankAccount bankAccountData, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity createBankAccount(@RequestBody @Valid RegisterBankAccount bankAccountData, UriComponentsBuilder uriBuilder) {
 
         return bankAccountService.createBankAccount(bankAccountData, uriBuilder);
 
