@@ -1,7 +1,8 @@
 package com.vh.simpleBankProject.model;
 
-import com.vh.simpleBankProject.dto.RegisterBankAccount;
+import com.vh.simpleBankProject.dto.bankAccountDTO.RegisterBankAccount;
 import com.vh.simpleBankProject.exception.BankAccountBalanceNotEnough;
+import com.vh.simpleBankProject.exception.DepositValueIsInvalid;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -46,5 +47,10 @@ public class BankAccount {
         }
         bankAccountTransferFrom.balance = bankAccountTransferFrom.balance.subtract(amount);
         bankAccountTransferTo.balance = bankAccountTransferTo.balance.add(amount);
+    }
+
+    public void deposit(BigDecimal depositValue) {
+        System.out.println(this.balance);
+        this.balance = this.getBalance().add(depositValue);
     }
 }

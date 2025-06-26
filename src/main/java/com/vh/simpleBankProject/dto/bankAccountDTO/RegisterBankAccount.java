@@ -1,4 +1,4 @@
-package com.vh.simpleBankProject.dto;
+package com.vh.simpleBankProject.dto.bankAccountDTO;
 
 import com.vh.simpleBankProject.model.AccountType;
 import jakarta.validation.constraints.DecimalMin;

@@ -9,3 +9,12 @@ create table bank_account{
     primary key(id)
 
 };
+
+create table transfer_history{
+    id bigint not null auto_increment,
+    amount decimal(19,4),
+    time_created timestamp,
+    account_number varchar(30) not null,
+
+
+}
