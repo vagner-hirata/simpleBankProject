@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public record RegisterBankAccount(
         @NotNull
         String customerName,
-        @DecimalMin("0")
+        @NotNull
         BigDecimal balance,
         @NotNull
         AccountType accountType,

@@ -4,17 +4,16 @@ import com.vh.simpleBankProject.dto.bankAccountDTO.BankAccountDataList;
 import com.vh.simpleBankProject.dto.bankAccountDTO.BankAccountDetails;
 import com.vh.simpleBankProject.dto.bankAccountDTO.RegisterBankAccount;
 import com.vh.simpleBankProject.dto.transferDTO.DepositMoneyDetails;
-import com.vh.simpleBankProject.dto.transferDTO.DepositMoneyRequest;
 import com.vh.simpleBankProject.dto.transferDTO.RegisterTransferRequest;
+import com.vh.simpleBankProject.dto.transferDTO.TransferMoneyDetails;
 import com.vh.simpleBankProject.exception.AccountNumberAlreadyExistsException;
-import com.vh.simpleBankProject.exception.AccountNumberNotFound;
-import com.vh.simpleBankProject.exception.DepositValueIsInvalid;
+import com.vh.simpleBankProject.exception.AccountNumberNotFoundException;
+import com.vh.simpleBankProject.exception.TransferValueIsInvalidException;
 import com.vh.simpleBankProject.model.BankAccount;
 import com.vh.simpleBankProject.model.TransferHistory;
 import com.vh.simpleBankProject.repository.BankAccountRepository;
 import com.vh.simpleBankProject.repository.TransferHistoryRepository;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -55,11 +54,11 @@ public class BankAccountService {
 
 
     public List<BankAccountDataList> getBankAccountByAccountNumber(String accountNumber) {
-        isNotValidAccountNumber(accountNumber);
-
+        if(isNotValidAccountNumber(accountNumber)) {
+            throw new AccountNumberNotFoundException("Account number provided was not found");
+        }
 
         return bankAccountRepository.findByAccountNumber(accountNumber).stream().map(BankAccountDataList::new).toList();
-
 
 
     }
@@ -67,21 +66,46 @@ public class BankAccountService {
 
     public ResponseEntity createDepositRequest(@Valid RegisterTransferRequest transferRequestData, UriComponentsBuilder uriBuilder) {
         TransferHistory transferHistory = new TransferHistory(transferRequestData);
-        // checking if the amount is below zero, if it is throw an exception.
-        if(transferHistory.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new DepositValueIsInvalid("The deposit value is invalid, must be greater than zero");
-        }
+
+        // checking if the value is not too high.
+        depositAmountAboveValueNeedsConfirmation(transferHistory.getAmount());
+        // checking if the amount is below zero.
+        transferValueIsInvalid(transferRequestData.amount());
+
+
+        // saving transfer history
         transferHistoryRepository.save(transferHistory);
         URI uri = uriBuilder.path("/bankAccount/depositRequest/{id}").buildAndExpand(transferHistory.getId()).toUri();
 
         return ResponseEntity.created(uri).body(new DepositMoneyDetails(transferHistory));
+
+
     }
 
-    public void transferMoney(String fromAccountNumber, String toAccountNumber, BigDecimal amount) {
-        isNotValidAccountNumber(fromAccountNumber);
-        isNotValidAccountNumber(toAccountNumber);
+    public ResponseEntity createTransferRequest(@Valid RegisterTransferRequest transferRequestData, UriComponentsBuilder uriBuilder) {
+
+        TransferHistory transferHistory = new TransferHistory(transferRequestData);
+
+        // checking if account number exists in the database
+        if(isNotValidAccountNumber(transferRequestData.toAccountNumber()) && isNotValidAccountNumber(transferRequestData.fromAccountNumber())) {
+            throw new AccountNumberNotFoundException("Check account number, either or both of them is invalid");
+        }
 
 
+
+
+        // checking if amount is not above standard
+        depositAmountAboveValueNeedsConfirmation(transferHistory.getAmount());
+
+        // checking if value is not below zero or invalid
+        transferValueIsInvalid(transferRequestData.amount());
+
+        // saving transfer history in the database
+        transferHistoryRepository.save(transferHistory);
+
+        URI uri = uriBuilder.path("/bankAccount/transferRequest/{id}").buildAndExpand(transferHistory.getId()).toUri();
+
+        return ResponseEntity.created(uri).body(new TransferMoneyDetails(transferHistory));
     }
 
     public void depositMoney(String accountNumber, BigDecimal amount) {
@@ -91,11 +115,30 @@ public class BankAccountService {
 
 
     }
+    public void transferMoney(String toAccountNumber, String fromAccountNumber, BigDecimal amount){
+        BankAccount toBankAccount = bankAccountRepository.findBankAccountByAccountNumber(toAccountNumber);
+        BankAccount fromBankAccount = bankAccountRepository.findBankAccountByAccountNumber(fromAccountNumber);
+        toBankAccount.makeTransfer(fromBankAccount, toBankAccount, amount);
+
+    }
 
     public boolean isNotValidAccountNumber(String accountNumber) {
-        if(!bankAccountRepository.existsByAccountNumber(accountNumber)) {
-            throw new AccountNumberNotFound("Account number provided was not found.");
-        }
-        return false;
+        return !bankAccountRepository.existsByAccountNumber(accountNumber);
     }
+
+    public void transferValueIsInvalid(BigDecimal value) {
+        if(value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new TransferValueIsInvalidException("The deposit value is invalid, must be greater than zero");
+        }
+
+    }
+
+
+    public void depositAmountAboveValueNeedsConfirmation(BigDecimal value) {
+        if(value.compareTo(BigDecimal.valueOf(20000)) > 0) {
+            throw new TransferValueIsInvalidException("The value you are trying to deposit is higher than the standard, you will need to confirm with our support.");
+        }
+
+    }
+
 }

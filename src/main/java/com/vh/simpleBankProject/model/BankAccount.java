@@ -1,8 +1,7 @@
 package com.vh.simpleBankProject.model;
 
 import com.vh.simpleBankProject.dto.bankAccountDTO.RegisterBankAccount;
-import com.vh.simpleBankProject.exception.BankAccountBalanceNotEnough;
-import com.vh.simpleBankProject.exception.DepositValueIsInvalid;
+import com.vh.simpleBankProject.exception.BankAccountBalanceNotEnoughException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -15,8 +14,8 @@ import java.math.BigDecimal;
 @Table(name="bank_account")
 @Entity(name="bank_account")
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
+@AllArgsConstructor
 @EqualsAndHashCode(of = "id")
 public class BankAccount {
     @Id
@@ -43,14 +42,14 @@ public class BankAccount {
 
     public void makeTransfer(BankAccount bankAccountTransferFrom, BankAccount bankAccountTransferTo, BigDecimal amount) {
         if(bankAccountTransferFrom.balance.compareTo(amount) < 0) {
-            throw new BankAccountBalanceNotEnough("You don't have enough money to complete this transfer");
+            throw new BankAccountBalanceNotEnoughException("You don't have enough money to complete this transfer");
         }
         bankAccountTransferFrom.balance = bankAccountTransferFrom.balance.subtract(amount);
         bankAccountTransferTo.balance = bankAccountTransferTo.balance.add(amount);
     }
 
     public void deposit(BigDecimal depositValue) {
-        System.out.println(this.balance);
-        this.balance = this.getBalance().add(depositValue);
+
+       this.balance = this.balance.add(depositValue);
     }
 }
