@@ -30,4 +30,3 @@ The following technologies were used when creating this project:
 - **Data persistence:** PostgreSQL, Spring Data JPA.
 - **Build and Dependency:** Maven 3.9
 - **Support tools:** Insomnia
-- 
